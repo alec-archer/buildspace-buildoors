@@ -20,8 +20,6 @@ import {
   SftWithToken,
   walletAdapterIdentity,
 } from "@metaplex-foundation/js";
-import Unstaked from "../components/Unstaked";
-import Staked from "../components/Staked";
 import { ItemBox } from "../components/ItemBox";
 import StakeOptionsDisplay from "../components/StakeOptionsDisplay";
 
