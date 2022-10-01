@@ -53,7 +53,7 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
 
   return (
     <MainLayout>
-      <VStack spacing={20} justify="flex-start" align="flex-start">
+      <VStack spacing={7} justify="flex-start" align="flex-start">
         <Heading color="white" as="h1" size="2xl">
           Level up your buildoor
         </Heading>
@@ -104,8 +104,8 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
                   Gear
                 </Text>
                 <HStack>
-                  <ItemBox>mock</ItemBox>
-                  <ItemBox>mock</ItemBox>
+                  <ItemBox bgColor="#d3d3d3">buildspace t-shirt</ItemBox>
+                  <ItemBox bgColor="#d3d3d3">buildspace sunglasses</ItemBox>
                 </HStack>
               </VStack>
               <VStack alignItems="flex-start">
@@ -113,9 +113,9 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
                   Loot Boxes
                 </Text>
                 <HStack>
-                  <ItemBox>mock</ItemBox>
-                  <ItemBox>mock</ItemBox>
-                  <ItemBox>mock</ItemBox>
+                  <ItemBox bgColor="#d3d3d3">secrets</ItemBox>
+                  <ItemBox bgColor="#d3d3d3">more secrets</ItemBox>
+                  <ItemBox bgColor="#d3d3d3">even more secrets</ItemBox>
                 </HStack>
               </VStack>
             </HStack>
