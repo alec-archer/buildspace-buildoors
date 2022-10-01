@@ -38,6 +38,8 @@ const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
   const walletAdapter = useWallet();
   const { connection } = useConnection();
   const [nftTokenAccount, setNftTokenAccount] = useState<web3.PublicKey>();
+  const [isSendingTransaction, setIsSendingTransaction] =
+    useState<boolean>(false);
 
   useEffect(() => {
     if (nftData) {
@@ -56,6 +58,7 @@ const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
       } else if (!nftTokenAccount) {
         return;
       }
+      setIsSendingTransaction(true);
       console.log("mmmh, stake");
 
       const transaction = new web3.Transaction();
@@ -97,6 +100,8 @@ const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
         stake();
       } catch (error) {
         console.log(error);
+      } finally {
+        setIsSendingTransaction(false);
       }
     },
     [walletAdapter, connection, nftData, isStaked]
@@ -110,6 +115,7 @@ const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
       } else if (!nftTokenAccount) {
         return;
       }
+      setIsSendingTransaction(true);
       console.log("unstake");
 
       const transaction = new web3.Transaction();
@@ -151,6 +157,8 @@ const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
         unstake();
       } catch (error) {
         console.log(error);
+      } finally {
+        setIsSendingTransaction(false);
       }
     },
     [connection, walletAdapter.publicKey, nftData, nftTokenAccount, isStaked]
@@ -165,6 +173,7 @@ const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
       } else if (!nftTokenAccount) {
         return;
       }
+      setIsSendingTransaction(true);
       console.log("redeem");
 
       const transaction = new web3.Transaction();
@@ -202,6 +211,8 @@ const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
         await sendAndConfirmTransaction(transaction);
       } catch (error) {
         console.log(error);
+      } finally {
+        setIsSendingTransaction(false);
       }
     },
     [connection, walletAdapter.publicKey, nftTokenAccount]
@@ -261,10 +272,15 @@ const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
         onClick={isStaked ? handleRedeem : handleStake}
         bgColor="buttonGreen"
         width="200px"
+        isLoading={isSendingTransaction}
       >
         <Text as="b">{isStaked ? "claim $BLD" : "stake buildoor"}</Text>
       </Button>
-      {isStaked ? <Button onClick={handleUnstake}>unstake</Button> : null}
+      {isStaked ? (
+        <Button onClick={handleUnstake} isLoading={isSendingTransaction}>
+          unstake
+        </Button>
+      ) : null}
     </VStack>
   );
 };
