@@ -1,9 +1,11 @@
-import { Button, HStack, Text } from "@chakra-ui/react";
+import { Button, HStack, Text, VStack } from "@chakra-ui/react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { FC, MouseEventHandler, useCallback, useEffect, useState } from "react";
 import * as web3 from "@solana/web3.js";
 import {
+  createInitializeStakeAccountInstruction,
   createRedeemInstruction,
+  createStakingInstruction,
   createUnstakeInstruction,
 } from "../utils/instructions";
 import { BLD_TOKEN_MINT, PROGRAM_ID } from "../utils/constants";
@@ -14,12 +16,25 @@ import {
   createAssociatedTokenAccountInstruction,
 } from "@solana/spl-token";
 
-interface StakedProps {
-  onClick: () => void;
+interface StakeOptionsDisplayProps {
+  stake: () => void;
+  unstake: () => void;
   nftData: any;
+  isStaked: boolean;
+  daysStaked: number;
+  totalEarned: number;
+  claimable: number;
 }
 
-const Staked: FC<StakedProps> = ({ onClick, nftData }) => {
+const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
+  stake,
+  unstake,
+  nftData,
+  isStaked,
+  daysStaked,
+  totalEarned,
+  claimable,
+}) => {
   const walletAdapter = useWallet();
   const { connection } = useConnection();
   const [nftTokenAccount, setNftTokenAccount] = useState<web3.PublicKey>();
@@ -32,7 +47,61 @@ const Staked: FC<StakedProps> = ({ onClick, nftData }) => {
     }
   }, [nftData, walletAdapter, connection]);
 
-  const handleClick: MouseEventHandler<HTMLButtonElement> = useCallback(
+  const handleStake: MouseEventHandler<HTMLButtonElement> = useCallback(
+    async (event) => {
+      event.preventDefault();
+      if (!walletAdapter.publicKey) {
+        alert("Please connect your wallet");
+        return;
+      } else if (!nftTokenAccount) {
+        return;
+      }
+      console.log("mmmh, stake");
+
+      const transaction = new web3.Transaction();
+
+      console.log("Checking if staking account exists ...");
+      const [stakingAccountPublicKey] = web3.PublicKey.findProgramAddressSync(
+        [walletAdapter.publicKey.toBuffer(), nftTokenAccount.toBuffer()],
+        PROGRAM_ID
+      );
+      const stakingAccountInfo = await connection.getAccountInfo(
+        stakingAccountPublicKey
+      );
+      console.log(`Got staking account: ${stakingAccountInfo}`);
+
+      if (!stakingAccountInfo) {
+        console.log("Creating initializeStakeAccount instruciton ...");
+        const createStakeAccount = createInitializeStakeAccountInstruction(
+          walletAdapter.publicKey,
+          nftTokenAccount,
+          PROGRAM_ID
+        );
+        transaction.add(createStakeAccount);
+      }
+
+      console.log("Creating staking instruction ...");
+      const stakingInstruction = createStakingInstruction(
+        walletAdapter.publicKey,
+        nftTokenAccount,
+        nftData.mint.address,
+        nftData.edition.address,
+        TOKEN_PROGRAM_ID,
+        METADATA_PROGRAM_ID,
+        PROGRAM_ID
+      );
+      transaction.add(stakingInstruction);
+
+      try {
+        await sendAndConfirmTransaction(transaction);
+        stake();
+      } catch (error) {
+        console.log(error);
+      }
+    },
+    [walletAdapter, connection, nftData, isStaked]
+  );
+  const handleUnstake: MouseEventHandler<HTMLButtonElement> = useCallback(
     async (event) => {
       event.preventDefault();
       if (!walletAdapter.publicKey) {
@@ -79,12 +148,12 @@ const Staked: FC<StakedProps> = ({ onClick, nftData }) => {
       transaction.add(unstakeInstruction);
       try {
         await sendAndConfirmTransaction(transaction);
-        onClick();
+        unstake();
       } catch (error) {
         console.log(error);
       }
     },
-    [connection, walletAdapter.publicKey, nftData, onClick, nftTokenAccount]
+    [connection, walletAdapter.publicKey, nftData, nftTokenAccount, isStaked]
   );
 
   const handleRedeem: MouseEventHandler<HTMLButtonElement> = useCallback(
@@ -135,7 +204,7 @@ const Staked: FC<StakedProps> = ({ onClick, nftData }) => {
         console.log(error);
       }
     },
-    [connection, walletAdapter.publicKey, nftTokenAccount, onClick]
+    [connection, walletAdapter.publicKey, nftTokenAccount]
   );
 
   const sendAndConfirmTransaction = useCallback(
@@ -162,24 +231,42 @@ const Staked: FC<StakedProps> = ({ onClick, nftData }) => {
   );
 
   return (
-    <HStack>
-      <Button
-        bgColor="accent"
-        color="white"
-        maxW="380px"
-        onClick={handleRedeem}
+    <VStack
+      bgColor="containerBg"
+      borderRadius="20px"
+      padding="20px 40px"
+      spacing={5}
+    >
+      <Text
+        bgColor="containerBgSecondary"
+        padding="4px 8px"
+        borderRadius="20px"
+        color="bodyText"
+        as="b"
+        fontSize="sm"
       >
-        <HStack>
-          <Text>redeem</Text>
-        </HStack>
+        {isStaked
+          ? `STAKING ${daysStaked} DAY${daysStaked === 1 ? "" : "S"}`
+          : "READY TO STAKE"}
+      </Text>
+      <VStack spacing={-1}>
+        <Text color="white" as="b" fontSize="4xl">
+          {isStaked ? `${totalEarned} $BLD` : "0 $BLD"}
+        </Text>
+        <Text color="bodyText">
+          {isStaked ? `${claimable} $BLD earned` : "earn $BLD by staking"}
+        </Text>
+      </VStack>
+      <Button
+        onClick={isStaked ? handleRedeem : handleStake}
+        bgColor="buttonGreen"
+        width="200px"
+      >
+        <Text as="b">{isStaked ? "claim $BLD" : "stake buildoor"}</Text>
       </Button>
-      <Button bgColor="accent" color="white" maxW="380px" onClick={handleClick}>
-        <HStack>
-          <Text>unstake buildoor</Text>
-        </HStack>
-      </Button>
-    </HStack>
+      {isStaked ? <Button onClick={handleUnstake}>unstake</Button> : null}
+    </VStack>
   );
 };
 
-export default Staked;
+export default StakeOptionsDisplay;

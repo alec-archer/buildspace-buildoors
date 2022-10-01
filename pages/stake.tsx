@@ -1,11 +1,12 @@
 import type { NextPage } from "next";
 import {
   VStack,
-  Container,
   Heading,
   Text,
   Image,
   HStack,
+  Flex,
+  Center,
 } from "@chakra-ui/react";
 import { useEffect, useMemo, useState } from "react";
 import MainLayout from "../components/MainLayout";
@@ -21,6 +22,8 @@ import {
 } from "@metaplex-foundation/js";
 import Unstaked from "../components/Unstaked";
 import Staked from "../components/Staked";
+import { ItemBox } from "../components/ItemBox";
+import StakeOptionsDisplay from "../components/StakeOptionsDisplay";
 
 const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
   const walletAdapter = useWallet();
@@ -32,6 +35,7 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
     return Metaplex.make(connection).use(walletAdapterIdentity(walletAdapter));
   }, [connection, walletAdapter]);
   const [isStaked, setIsStaked] = useState<boolean>(false);
+  const [level, setLevel] = useState<number>(1);
 
   const stake = () => setIsStaked(true);
   const unstake = () => setIsStaked(false);
@@ -58,16 +62,65 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
           Stake your buildoor to earn 10 $BLD per day and to get access to a
           randomized loot box full of upgrades for your buildoor
         </Text>
-        <Container>
-          <HStack>
-            <Image src={imageSrc} alt="buildoor image" />
-            {isStaked ? (
-              <Staked onClick={unstake} nftData={nftData} />
-            ) : (
-              <Unstaked onClick={stake} nftData={nftData} />
-            )}
-          </HStack>
-        </Container>
+        <HStack spacing={20} alignItems="flex-start">
+          <VStack align="flex-start" minWidth="200px">
+            <Flex direction="column">
+              <Image src={imageSrc ?? ""} alt="buildoor nft" zIndex="1" />
+              <Center
+                bgColor="secondaryPurple"
+                borderRadius="0 0 8px 8px"
+                marginTop="-8px"
+                zIndex="2"
+                height="32px"
+              >
+                <Text
+                  color="white"
+                  as="b"
+                  fontSize="md"
+                  width="100%"
+                  textAlign="center"
+                >
+                  {isStaked ? "STAKING" : "UNSTAKED"}
+                </Text>
+              </Center>
+            </Flex>
+            <Text fontSize="2xl" as="b" color="white">
+              LEVEL {level}
+            </Text>
+          </VStack>
+          <VStack alignItems="flex-start" spacing={10}>
+            <StakeOptionsDisplay
+              stake={stake}
+              unstake={unstake}
+              nftData={nftData}
+              isStaked={isStaked}
+              daysStaked={4}
+              totalEarned={60}
+              claimable={20}
+            />
+            <HStack spacing={10}>
+              <VStack alignItems="flex-start">
+                <Text color="white" as="b" fontSize="2xl">
+                  Gear
+                </Text>
+                <HStack>
+                  <ItemBox>mock</ItemBox>
+                  <ItemBox>mock</ItemBox>
+                </HStack>
+              </VStack>
+              <VStack alignItems="flex-start">
+                <Text color="white" as="b" fontSize="2xl">
+                  Loot Boxes
+                </Text>
+                <HStack>
+                  <ItemBox>mock</ItemBox>
+                  <ItemBox>mock</ItemBox>
+                  <ItemBox>mock</ItemBox>
+                </HStack>
+              </VStack>
+            </HStack>
+          </VStack>
+        </HStack>
       </VStack>
     </MainLayout>
   );
