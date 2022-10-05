@@ -1,20 +1,11 @@
-import { Button, HStack, Text, VStack } from "@chakra-ui/react";
+import { Button, Text, VStack } from "@chakra-ui/react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { FC, MouseEventHandler, useCallback, useEffect, useState } from "react";
-import * as web3 from "@solana/web3.js";
-import {
-  createInitializeStakeAccountInstruction,
-  createRedeemInstruction,
-  createStakingInstruction,
-  createUnstakeInstruction,
-} from "../utils/instructions";
-import { BLD_TOKEN_MINT, PROGRAM_ID } from "../utils/constants";
+import { Transaction, PublicKey } from "@solana/web3.js";
+import { BLD_TOKEN_MINT } from "../utils/constants";
 import { PROGRAM_ID as METADATA_PROGRAM_ID } from "@metaplex-foundation/mpl-token-metadata";
-import {
-  TOKEN_PROGRAM_ID,
-  getAssociatedTokenAddress,
-  createAssociatedTokenAccountInstruction,
-} from "@solana/spl-token";
+import { getAssociatedTokenAddress } from "@solana/spl-token";
+import { useWorkspace } from "./WorkspaceProvider";
 
 interface StakeOptionsDisplayProps {
   stake: () => void;
@@ -37,7 +28,8 @@ const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
 }) => {
   const walletAdapter = useWallet();
   const { connection } = useConnection();
-  const [nftTokenAccount, setNftTokenAccount] = useState<web3.PublicKey>();
+  const workspace = useWorkspace();
+  const [nftTokenAccount, setNftTokenAccount] = useState<PublicKey>();
   const [isSendingTransaction, setIsSendingTransaction] =
     useState<boolean>(false);
 
@@ -55,47 +47,23 @@ const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
       if (!walletAdapter.publicKey) {
         alert("Please connect your wallet");
         return;
-      } else if (!nftTokenAccount) {
-        return;
-      }
+      } else if (!nftTokenAccount || !workspace.program) return;
       setIsSendingTransaction(true);
       console.log("mmmh, stake");
 
-      const transaction = new web3.Transaction();
-
-      console.log("Checking if staking account exists ...");
-      const [stakingAccountPublicKey] = web3.PublicKey.findProgramAddressSync(
-        [walletAdapter.publicKey.toBuffer(), nftTokenAccount.toBuffer()],
-        PROGRAM_ID
-      );
-      const stakingAccountInfo = await connection.getAccountInfo(
-        stakingAccountPublicKey
-      );
-      console.log(`Got staking account: ${stakingAccountInfo}`);
-
-      if (!stakingAccountInfo) {
-        console.log("Creating initializeStakeAccount instruciton ...");
-        const createStakeAccount = createInitializeStakeAccountInstruction(
-          walletAdapter.publicKey,
-          nftTokenAccount,
-          PROGRAM_ID
-        );
-        transaction.add(createStakeAccount);
-      }
-
-      console.log("Creating staking instruction ...");
-      const stakingInstruction = createStakingInstruction(
-        walletAdapter.publicKey,
-        nftTokenAccount,
-        nftData.mint.address,
-        nftData.edition.address,
-        TOKEN_PROGRAM_ID,
-        METADATA_PROGRAM_ID,
-        PROGRAM_ID
-      );
-      transaction.add(stakingInstruction);
+      const transaction = new Transaction();
 
       try {
+        const instruction = await workspace.program.methods
+          .stake()
+          .accounts({
+            nftPublickey: nftTokenAccount,
+            nftMintPublickey: nftData.mint.address,
+            nftEditionPublickey: nftData.edition.address,
+            metadataProgram: METADATA_PROGRAM_ID,
+          })
+          .instruction();
+        transaction.add(instruction);
         await sendAndConfirmTransaction(transaction);
         stake();
       } catch (error) {
@@ -104,7 +72,13 @@ const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
         setIsSendingTransaction(false);
       }
     },
-    [walletAdapter, connection, nftData, isStaked]
+    [
+      walletAdapter.publicKey,
+      nftTokenAccount,
+      workspace.program,
+      nftData,
+      stake,
+    ]
   );
   const handleUnstake: MouseEventHandler<HTMLButtonElement> = useCallback(
     async (event) => {
@@ -112,13 +86,13 @@ const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
       if (!walletAdapter.publicKey) {
         alert("Please connect your wallet");
         return;
-      } else if (!nftTokenAccount) {
+      } else if (!nftTokenAccount || !workspace.program) {
         return;
       }
       setIsSendingTransaction(true);
       console.log("unstake");
 
-      const transaction = new web3.Transaction();
+      const transaction = new Transaction();
 
       console.log("Checking if ATA exists ...");
       const userAtaPublicKey = await getAssociatedTokenAddress(
@@ -126,33 +100,19 @@ const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
         walletAdapter.publicKey
       );
 
-      const userAta = await connection.getAccountInfo(userAtaPublicKey);
-
-      if (!userAta) {
-        console.log("Creating createATAInstruction ...");
-        const createAtaInstruction = createAssociatedTokenAccountInstruction(
-          walletAdapter.publicKey,
-          userAtaPublicKey,
-          walletAdapter.publicKey,
-          BLD_TOKEN_MINT
-        );
-        transaction.add(createAtaInstruction);
-      }
-
-      const unstakeInstruction = createUnstakeInstruction(
-        walletAdapter.publicKey,
-        nftTokenAccount,
-        nftData.mint.address,
-        nftData.edition.address,
-        BLD_TOKEN_MINT,
-        userAtaPublicKey,
-        TOKEN_PROGRAM_ID,
-        METADATA_PROGRAM_ID,
-        PROGRAM_ID
-      );
-
-      transaction.add(unstakeInstruction);
       try {
+        const instruction = await workspace.program.methods
+          .unstake()
+          .accounts({
+            nftPublickey: nftTokenAccount,
+            nftEditionPublickey: nftData.edition.address,
+            nftMintPublickey: nftData.mint.address,
+            tokenMint: BLD_TOKEN_MINT,
+            userAta: userAtaPublicKey,
+            metadataProgram: METADATA_PROGRAM_ID,
+          })
+          .instruction();
+        transaction.add(instruction);
         await sendAndConfirmTransaction(transaction);
         unstake();
       } catch (error) {
@@ -161,7 +121,13 @@ const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
         setIsSendingTransaction(false);
       }
     },
-    [connection, walletAdapter.publicKey, nftData, nftTokenAccount, isStaked]
+    [
+      walletAdapter.publicKey,
+      nftTokenAccount,
+      workspace.program,
+      nftData,
+      unstake,
+    ]
   );
 
   const handleRedeem: MouseEventHandler<HTMLButtonElement> = useCallback(
@@ -170,13 +136,13 @@ const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
       if (!walletAdapter.publicKey) {
         alert("Please connect your wallet");
         return;
-      } else if (!nftTokenAccount) {
+      } else if (!nftTokenAccount || !workspace.program) {
         return;
       }
       setIsSendingTransaction(true);
       console.log("redeem");
 
-      const transaction = new web3.Transaction();
+      const transaction = new Transaction();
 
       console.log("Checking if ATA exists ...");
       const userAtaPublicKey = await getAssociatedTokenAddress(
@@ -184,30 +150,16 @@ const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
         walletAdapter.publicKey
       );
 
-      const userAta = await connection.getAccountInfo(userAtaPublicKey);
-
-      if (!userAta) {
-        console.log("Creating createATAInstruction ...");
-        const createAtaInstruction = createAssociatedTokenAccountInstruction(
-          walletAdapter.publicKey,
-          userAtaPublicKey,
-          walletAdapter.publicKey,
-          BLD_TOKEN_MINT
-        );
-        transaction.add(createAtaInstruction);
-      }
-
-      const redeemInstruction = createRedeemInstruction(
-        walletAdapter.publicKey,
-        nftTokenAccount,
-        BLD_TOKEN_MINT,
-        userAtaPublicKey,
-        TOKEN_PROGRAM_ID,
-        PROGRAM_ID
-      );
-
-      transaction.add(redeemInstruction);
       try {
+        const instruction = await workspace.program.methods
+          .redeem()
+          .accounts({
+            nftPublickey: nftTokenAccount,
+            tokenMint: BLD_TOKEN_MINT,
+            userAta: userAtaPublicKey,
+          })
+          .instruction();
+        transaction.add(instruction);
         await sendAndConfirmTransaction(transaction);
       } catch (error) {
         console.log(error);
@@ -215,11 +167,11 @@ const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
         setIsSendingTransaction(false);
       }
     },
-    [connection, walletAdapter.publicKey, nftTokenAccount]
+    [walletAdapter.publicKey, nftTokenAccount, workspace.program]
   );
 
   const sendAndConfirmTransaction = useCallback(
-    async (transaction: web3.Transaction) => {
+    async (transaction: Transaction) => {
       console.log("Sending transaction ...");
       const signature = await walletAdapter.sendTransaction(
         transaction,

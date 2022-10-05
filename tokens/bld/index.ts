@@ -17,6 +17,7 @@ import {
   DataV2,
 } from "@metaplex-foundation/mpl-token-metadata";
 import * as fs from "fs";
+import { PROGRAM_ID } from "../../utils/constants";
 
 const tokenName = "BUILD";
 const tokenSymbol = "BLD";
@@ -148,7 +149,7 @@ async function main() {
   const connection = new web3.Connection(web3.clusterApiUrl("devnet"));
   const user = await initializeKeypair(connection);
   const stakingProgramId = new web3.PublicKey(
-    "945nh2YTAoier9Ua42GVWHpckXK1GVXGZoHpCnDtJDP1"
+    "3LAeEArbK6orsGuEDd1imxGXy3zwaDoUUySR4wYiXi1j"
   );
 
   console.log("PublicKey:", user.publicKey.toBase58());
