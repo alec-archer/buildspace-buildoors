@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "create-bld-token": "ts-node tokens/bld/index.ts",
+    "create-gear-tokens": "ts-node tokens/gear/index.ts",
     "reset-candy-machine": "rm tokens/candy-machine/cache.json && cd tokens/candy-machine && sugar launch"
   },
   "dependencies": {
