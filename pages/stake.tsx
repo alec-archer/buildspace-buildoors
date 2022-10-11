@@ -8,10 +8,10 @@ import {
   Flex,
   Center,
 } from "@chakra-ui/react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import MainLayout from "../components/MainLayout";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, Transaction } from "@solana/web3.js";
 import {
   Metaplex,
   Nft,
@@ -22,6 +22,13 @@ import {
 } from "@metaplex-foundation/js";
 import { ItemBox } from "../components/ItemBox";
 import StakeOptionsDisplay from "../components/StakeOptionsDisplay";
+import { GEAR_TOKEN_MINTS } from "../utils/constants";
+import {
+  getAssociatedTokenAddress,
+  createAssociatedTokenAccountInstruction,
+} from "@solana/spl-token";
+import { GearItem } from "../components/GearItem";
+import { LootBox } from "../components/LootBox";
 
 const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
   const walletAdapter = useWallet();
@@ -34,6 +41,7 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
   }, [connection, walletAdapter]);
   const [isStaked, setIsStaked] = useState<boolean>(false);
   const [level, setLevel] = useState<number>(1);
+  const [gear, setGear] = useState<PublicKey[]>([]);
 
   const stake = () => setIsStaked(true);
   const unstake = () => setIsStaked(false);
@@ -48,6 +56,71 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
       })
       .catch((error) => console.error(error));
   }, [mint, metaplex, walletAdapter]);
+
+  // this code would be if gear persisted across reloads
+  // useEffect(() => {
+  //   const findCollectedGear = async () => {
+  //     if (!walletAdapter.publicKey) return;
+  //     for (const mint of GEAR_TOKEN_MINTS) {
+  //       const userGearAta = await getAssociatedTokenAddress(
+  //         mint,
+  //         walletAdapter.publicKey
+  //       );
+  //       const userGearAtaAccountInfo = await connection.getAccountInfo(
+  //         userGearAta
+  //       );
+
+  //       if (!userGearAtaAccountInfo) {
+  //         // create ATA
+  //         const transaction = new Transaction().add(
+  //           createAssociatedTokenAccountInstruction(
+  //             walletAdapter.publicKey,
+  //             userGearAta,
+  //             walletAdapter.publicKey,
+  //             mint
+  //           )
+  //         );
+  //         await sendAndConfirmTransaction(transaction);
+  //       }
+
+  //       const gearAtaBalance = (
+  //         await connection.getTokenAccountBalance(userGearAta)
+  //       ).value.amount;
+
+  //       if (Number(gearAtaBalance) > 0) {
+  //         setGear([...gear, mint]);
+  //       }
+  //     }
+  //   };
+  //   findCollectedGear();
+  // }, [connection, walletAdapter]);
+
+  // const sendAndConfirmTransaction = useCallback(
+  //   async (transaction: Transaction) => {
+  //     console.log("Sending transaction ...");
+  //     const signature = await walletAdapter.sendTransaction(
+  //       transaction,
+  //       connection
+  //     );
+  //     const latestBlockhash = await connection.getLatestBlockhash();
+  //     await connection.confirmTransaction(
+  //       {
+  //         blockhash: latestBlockhash.blockhash,
+  //         lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+  //         signature: signature,
+  //       },
+  //       "finalized"
+  //     );
+  //     console.log(
+  //       `Transaction submitted successfully: https://explorer.solana.com/tx/${signature}?cluster=devnet`
+  //     );
+  //   },
+  //   [walletAdapter, connection]
+  // );
+
+  const addGear = (mint: PublicKey) => {
+    setGear([...gear, mint]);
+  };
 
   return (
     <MainLayout>
@@ -102,8 +175,13 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
                   Gear
                 </Text>
                 <HStack>
-                  <ItemBox bgColor="#d3d3d3">buildspace t-shirt</ItemBox>
-                  <ItemBox bgColor="#d3d3d3">buildspace sunglasses</ItemBox>
+                  {gear.map((mint) => (
+                    <GearItem
+                      key={mint.toBase58()}
+                      bgColor="#d3d3d3"
+                      mint={mint}
+                    />
+                  ))}
                 </HStack>
               </VStack>
               <VStack alignItems="flex-start">
@@ -111,9 +189,8 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
                   Loot Boxes
                 </Text>
                 <HStack>
-                  <ItemBox bgColor="#d3d3d3">secrets</ItemBox>
-                  <ItemBox bgColor="#d3d3d3">more secrets</ItemBox>
-                  <ItemBox bgColor="#d3d3d3">even more secrets</ItemBox>
+                  <LootBox bgColor="#d3d3d3" addGear={addGear} price={10} />
+                  <LootBox bgColor="#d3d3d3" addGear={addGear} price={20} />
                 </HStack>
               </VStack>
             </HStack>
