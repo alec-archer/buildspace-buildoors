@@ -14,12 +14,14 @@ export const LootBox = ({
   bgColor,
   price,
   bldBalance,
+  bldBalanceCallback,
 }: {
   readonly gear: Gear;
   addGear: (gear: Gear) => void;
   bgColor?: string;
   price: number;
   bldBalance: number;
+  bldBalanceCallback: () => void;
 }) => {
   const walletAdapter = useWallet();
   const { connection } = useConnection();
@@ -87,6 +89,7 @@ export const LootBox = ({
       ? (newGear[lootBox.gearMint.toBase58()] += 1)
       : (newGear[lootBox.gearMint.toBase58()] = 1);
     addGear(newGear);
+    bldBalanceCallback();
     setIsClaimed(true);
     setIsSendingTransaction(false);
     console.log("Successfully collected gear");

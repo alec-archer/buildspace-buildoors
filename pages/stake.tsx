@@ -46,6 +46,7 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
 
   const stake = () => setIsStaked(true);
   const unstake = () => setIsStaked(false);
+  const lootBoxes = [10, 20, 50, 100];
 
   useEffect(() => {
     console.log("get NFT data ...");
@@ -168,34 +169,17 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
                   Loot Boxes
                 </Text>
                 <HStack>
-                  <LootBox
-                    bgColor="#d3d3d3"
-                    gear={gear}
-                    addGear={setGear}
-                    price={10}
-                    bldBalance={bldBalance}
-                  />
-                  <LootBox
-                    bgColor="#d3d3d3"
-                    gear={gear}
-                    addGear={setGear}
-                    price={20}
-                    bldBalance={bldBalance}
-                  />
-                  <LootBox
-                    bgColor="#d3d3d3"
-                    gear={gear}
-                    addGear={setGear}
-                    price={50}
-                    bldBalance={bldBalance}
-                  />
-                  <LootBox
-                    bgColor="#d3d3d3"
-                    gear={gear}
-                    addGear={setGear}
-                    price={100}
-                    bldBalance={bldBalance}
-                  />
+                  {lootBoxes.map((price) => (
+                    <LootBox
+                      key={price}
+                      bgColor="#d3d3d3"
+                      gear={gear}
+                      addGear={setGear}
+                      price={price}
+                      bldBalance={bldBalance}
+                      bldBalanceCallback={getBldBalance}
+                    />
+                  ))}
                 </HStack>
               </VStack>
             </HStack>
