@@ -184,20 +184,22 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
               totalEarned={bldBalance}
             />
             <HStack spacing={10}>
-              <VStack alignItems="flex-start">
-                <Text color="white" as="b" fontSize="2xl">
-                  Gear
-                </Text>
-                <HStack>
-                  {gear.map((mint) => (
-                    <GearItem
-                      key={mint.toBase58()}
-                      bgColor="#d3d3d3"
-                      mint={mint}
-                    />
-                  ))}
-                </HStack>
-              </VStack>
+              {gear.length > 0 && (
+                <VStack alignItems="flex-start">
+                  <Text color="white" as="b" fontSize="2xl">
+                    Gear
+                  </Text>
+                  <HStack>
+                    {gear.map((mint) => (
+                      <GearItem
+                        key={mint.toBase58()}
+                        bgColor="#d3d3d3"
+                        mint={mint}
+                      />
+                    ))}
+                  </HStack>
+                </VStack>
+              )}
               <VStack alignItems="flex-start">
                 <Text color="white" as="b" fontSize="2xl">
                   Loot Boxes
