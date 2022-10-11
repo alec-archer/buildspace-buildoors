@@ -13,6 +13,7 @@ interface StakeOptionsDisplayProps {
   nftData: any;
   isStaked: boolean;
   totalEarned: number;
+  bldBalanceCallback: () => void;
 }
 
 const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
@@ -21,6 +22,7 @@ const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
   nftData,
   isStaked,
   totalEarned,
+  bldBalanceCallback,
 }) => {
   const walletAdapter = useWallet();
   const { connection } = useConnection();
@@ -112,6 +114,7 @@ const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
         transaction.add(instruction);
         await sendAndConfirmTransaction(transaction);
         unstake();
+        bldBalanceCallback();
       } catch (error) {
         console.log(error);
       } finally {
@@ -158,6 +161,7 @@ const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
           .instruction();
         transaction.add(instruction);
         await sendAndConfirmTransaction(transaction);
+        bldBalanceCallback();
       } catch (error) {
         console.log(error);
       } finally {

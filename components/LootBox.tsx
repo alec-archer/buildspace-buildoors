@@ -29,7 +29,12 @@ export const LootBox = ({
     useState<boolean>(false);
 
   const handleLootBoxClick = async () => {
-    if (!walletAdapter.publicKey || !workspace.lootBoxProgram) return;
+    if (!walletAdapter.publicKey) {
+      alert("Please connect your wallet");
+      return;
+    } else if (!workspace.lootBoxProgram) {
+      return;
+    }
     console.log("Loot!");
     setIsSendingTransaction(true);
     // get userBldAta

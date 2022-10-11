@@ -48,8 +48,6 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
   const unstake = () => setIsStaked(false);
 
   useEffect(() => {
-    if (!walletAdapter.publicKey) return;
-
     console.log("get NFT data ...");
     metaplex
       .nfts()
@@ -60,19 +58,7 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
       })
       .catch((error) => console.error(error));
 
-    console.log("getting $BLD balance ...");
-    getAssociatedTokenAddress(BLD_TOKEN_MINT, walletAdapter.publicKey).then(
-      (userBldAta) => {
-        connection
-          .getTokenAccountBalance(userBldAta)
-          .then((response) =>
-            // divide by 100 b/c $BLD has two decimals
-            // TODO refactor so 100 isn't hardcoded; use decimal value from response?
-            setBldBalance(Number(response.value.amount) / 100)
-          )
-          .catch((error) => {});
-      }
-    );
+    getBldBalance();
 
     console.log("finding collected gear ...");
     const findCollectedGear = async () => {
@@ -97,6 +83,22 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
     findCollectedGear();
   }, [mint, metaplex, walletAdapter, connection]);
 
+  const getBldBalance = () => {
+    console.log("getting $BLD balance ...");
+    if (!walletAdapter.publicKey) return;
+    getAssociatedTokenAddress(BLD_TOKEN_MINT, walletAdapter.publicKey).then(
+      (userBldAta) => {
+        connection
+          .getTokenAccountBalance(userBldAta)
+          .then((response) =>
+            // divide by 100 b/c $BLD has two decimals
+            // TODO refactor so 100 isn't hardcoded; use decimal value from response?
+            setBldBalance(Number(response.value.amount) / 100)
+          )
+          .catch((error) => {});
+      }
+    );
+  };
   return (
     <MainLayout>
       <VStack spacing={7} justify="flex-start" align="flex-start">
@@ -141,6 +143,7 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
               nftData={nftData}
               isStaked={isStaked}
               totalEarned={bldBalance}
+              bldBalanceCallback={getBldBalance}
             />
             <HStack spacing={10} align="start">
               {Object.keys(gear).length > 0 && (
