@@ -55,7 +55,7 @@ const createToken = async (
 
   const mintInstruction = token.createInitializeMintInstruction(
     mintKeypair.publicKey,
-    2,
+    0,
     user.publicKey,
     user.publicKey,
     TOKEN_PROGRAM_ID
@@ -159,13 +159,27 @@ async function main() {
       tokenName: "HAT",
       tokenSymbol: "HAT",
       tokenDescription: "A hat for buildoors",
-      tokenImagePath: "tokens/gear/assets/unicorn.png",
-      tokenImageFileName: "unicorn.png",
+      tokenImagePath: "tokens/gear/assets/Hat.png",
+      tokenImageFileName: "Hat.png",
     },
     {
       tokenName: "HEADPHONES",
       tokenSymbol: "HDPH",
       tokenDescription: "Headphones for buildoors",
+      tokenImagePath: "tokens/gear/assets/headphones.png",
+      tokenImageFileName: "headphones.png",
+    },
+    {
+      tokenName: "MUSTACHE",
+      tokenSymbol: "MUST",
+      tokenDescription: "A mustache for buildoors",
+      tokenImagePath: "tokens/gear/assets/Mustache.png",
+      tokenImageFileName: "Mustache.png",
+    },
+    {
+      tokenName: "UNICORN MOUNT",
+      tokenSymbol: "UNIMOUNT",
+      tokenDescription: "A unicorn mount for buildoors",
       tokenImagePath: "tokens/gear/assets/unicorn.png",
       tokenImageFileName: "unicorn.png",
     },
