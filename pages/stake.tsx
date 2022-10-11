@@ -30,6 +30,10 @@ import {
 import { GearItem } from "../components/GearItem";
 import { LootBox } from "../components/LootBox";
 
+export interface Gear {
+  [index: string]: number;
+}
+
 const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
   const walletAdapter = useWallet();
   const { connection } = useConnection();
@@ -41,7 +45,7 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
   }, [connection, walletAdapter]);
   const [isStaked, setIsStaked] = useState<boolean>(false);
   const [level, setLevel] = useState<number>(1);
-  const [gear, setGear] = useState<PublicKey[]>([]);
+  const [gear, setGear] = useState<Gear>({});
   const [bldBalance, setBldBalance] = useState<number>(0);
 
   const stake = () => setIsStaked(true);
@@ -65,7 +69,7 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
           .getTokenAccountBalance(userBldAta)
           .then((response) =>
             // divide by 100 b/c $BLD has two decimals
-            // TODO refactor so 100 isn't hardcoded
+            // TODO refactor so 100 isn't hardcoded; use decimal value from response?
             setBldBalance(Number(response.value.amount) / 100)
           )
           .catch((error) => {});
@@ -73,70 +77,29 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
     );
   }, [mint, metaplex, walletAdapter, connection]);
 
-  // this code would be if gear persisted across reloads
-  // useEffect(() => {
-  //   const findCollectedGear = async () => {
-  //     if (!walletAdapter.publicKey) return;
-  //     for (const mint of GEAR_TOKEN_MINTS) {
-  //       const userGearAta = await getAssociatedTokenAddress(
-  //         mint,
-  //         walletAdapter.publicKey
-  //       );
-  //       const userGearAtaAccountInfo = await connection.getAccountInfo(
-  //         userGearAta
-  //       );
+  useEffect(() => {
+    console.log("finding collected gear ...");
+    const findCollectedGear = async () => {
+      if (!walletAdapter.publicKey) return;
+      const newGear = { ...gear };
+      for (const mint of GEAR_TOKEN_MINTS) {
+        const userGearAta = await getAssociatedTokenAddress(
+          mint,
+          walletAdapter.publicKey
+        );
 
-  //       if (!userGearAtaAccountInfo) {
-  //         // create ATA
-  //         const transaction = new Transaction().add(
-  //           createAssociatedTokenAccountInstruction(
-  //             walletAdapter.publicKey,
-  //             userGearAta,
-  //             walletAdapter.publicKey,
-  //             mint
-  //           )
-  //         );
-  //         await sendAndConfirmTransaction(transaction);
-  //       }
-
-  //       const gearAtaBalance = (
-  //         await connection.getTokenAccountBalance(userGearAta)
-  //       ).value.amount;
-
-  //       if (Number(gearAtaBalance) > 0) {
-  //         setGear([...gear, mint]);
-  //       }
-  //     }
-  //   };
-  //   findCollectedGear();
-  // }, [connection, walletAdapter]);
-
-  // const sendAndConfirmTransaction = useCallback(
-  //   async (transaction: Transaction) => {
-  //     console.log("Sending transaction ...");
-  //     const signature = await walletAdapter.sendTransaction(
-  //       transaction,
-  //       connection
-  //     );
-  //     const latestBlockhash = await connection.getLatestBlockhash();
-  //     await connection.confirmTransaction(
-  //       {
-  //         blockhash: latestBlockhash.blockhash,
-  //         lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
-  //         signature: signature,
-  //       },
-  //       "finalized"
-  //     );
-  //     console.log(
-  //       `Transaction submitted successfully: https://explorer.solana.com/tx/${signature}?cluster=devnet`
-  //     );
-  //   },
-  //   [walletAdapter, connection]
-  // );
-
-  const addGear = (mint: PublicKey) => {
-    setGear([...gear, mint]);
-  };
+        try {
+          const gearAtaBalance = (
+            await connection.getTokenAccountBalance(userGearAta)
+          ).value.amount;
+          newGear[mint.toBase58()] = Number(gearAtaBalance);
+        } catch (error) {}
+      }
+      console.log(newGear);
+      setGear(newGear);
+    };
+    findCollectedGear();
+  }, [connection, walletAdapter]);
 
   return (
     <MainLayout>
@@ -184,17 +147,17 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
               totalEarned={bldBalance}
             />
             <HStack spacing={10}>
-              {gear.length > 0 && (
+              {Object.keys(gear).length > 0 && (
                 <VStack alignItems="flex-start">
                   <Text color="white" as="b" fontSize="2xl">
                     Gear
                   </Text>
                   <HStack>
-                    {gear.map((mint) => (
+                    {Object.keys(gear).map((mint) => (
                       <GearItem
-                        key={mint.toBase58()}
+                        key={mint}
                         bgColor="#d3d3d3"
-                        mint={mint}
+                        mint={new PublicKey(mint)}
                       />
                     ))}
                   </HStack>
@@ -205,8 +168,18 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
                   Loot Boxes
                 </Text>
                 <HStack>
-                  <LootBox bgColor="#d3d3d3" addGear={addGear} price={10} />
-                  <LootBox bgColor="#d3d3d3" addGear={addGear} price={20} />
+                  <LootBox
+                    bgColor="#d3d3d3"
+                    gear={gear}
+                    addGear={setGear}
+                    price={10}
+                  />
+                  <LootBox
+                    bgColor="#d3d3d3"
+                    gear={gear}
+                    addGear={setGear}
+                    price={20}
+                  />
                 </HStack>
               </VStack>
             </HStack>

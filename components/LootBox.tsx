@@ -10,13 +10,16 @@ import {
 import { BLD_TOKEN_MINT, LOOT_BOX_PROGRAM_ID } from "../utils/constants";
 import { useWorkspace } from "./WorkspaceProvider";
 import { BN } from "@project-serum/anchor";
+import { Gear } from "../pages/stake";
 
 export const LootBox = ({
+  gear,
   addGear,
   bgColor,
   price,
 }: {
-  addGear: (mint: PublicKey) => void;
+  readonly gear: Gear;
+  addGear: (gear: Gear) => void;
   bgColor?: string;
   price: number;
 }) => {
@@ -76,7 +79,11 @@ export const LootBox = ({
 
     await sendAndConfirmTransaction(getLootTransaction);
     // setGear(gearMint)
-    addGear(lootBox.gearMint);
+    const newGear = { ...gear };
+    newGear[lootBox.gearMint.toBase58()]
+      ? (newGear[lootBox.gearMint.toBase58()] += 1)
+      : (newGear[lootBox.gearMint.toBase58()] = 1);
+    addGear(newGear);
     setIsClaimed(true);
     setIsSendingTransaction(false);
     console.log("Successfully collected gear");
