@@ -42,7 +42,7 @@ export const GearItem = ({
         bgColor={bgColor || "containerBg"}
         borderRadius="10px"
       >
-        <Image src={metadata?.image ?? ""} alt="gear item image" />
+        <Image src={metadata?.image ?? ""} alt="gear item image" padding={4} />
       </Center>
       <Text color="white" as="b" fontSize="md" width="100%" textAlign="center">
         {`x${count}`}

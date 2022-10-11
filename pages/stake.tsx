@@ -50,6 +50,7 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
   useEffect(() => {
     if (!walletAdapter.publicKey) return;
 
+    console.log("get NFT data ...");
     metaplex
       .nfts()
       .findByMint({ mintAddress: mint })
@@ -59,6 +60,7 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
       })
       .catch((error) => console.error(error));
 
+    console.log("getting $BLD balance ...");
     getAssociatedTokenAddress(BLD_TOKEN_MINT, walletAdapter.publicKey).then(
       (userBldAta) => {
         connection
@@ -168,12 +170,28 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
                     gear={gear}
                     addGear={setGear}
                     price={10}
+                    bldBalance={bldBalance}
                   />
                   <LootBox
                     bgColor="#d3d3d3"
                     gear={gear}
                     addGear={setGear}
                     price={20}
+                    bldBalance={bldBalance}
+                  />
+                  <LootBox
+                    bgColor="#d3d3d3"
+                    gear={gear}
+                    addGear={setGear}
+                    price={50}
+                    bldBalance={bldBalance}
+                  />
+                  <LootBox
+                    bgColor="#d3d3d3"
+                    gear={gear}
+                    addGear={setGear}
+                    price={100}
+                    bldBalance={bldBalance}
                   />
                 </HStack>
               </VStack>

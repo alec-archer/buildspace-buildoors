@@ -1,12 +1,8 @@
-import { Button, Center, Image } from "@chakra-ui/react";
-import { Metaplex, walletAdapterIdentity } from "@metaplex-foundation/js";
+import { Button, Center, Text } from "@chakra-ui/react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { PublicKey, PublicKeyInitData, Transaction } from "@solana/web3.js";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  getAssociatedTokenAddress,
-  createAssociatedTokenAccountInstruction,
-} from "@solana/spl-token";
+import { PublicKey, Transaction } from "@solana/web3.js";
+import { useCallback, useState } from "react";
+import { getAssociatedTokenAddress } from "@solana/spl-token";
 import { BLD_TOKEN_MINT, LOOT_BOX_PROGRAM_ID } from "../utils/constants";
 import { useWorkspace } from "./WorkspaceProvider";
 import { BN } from "@project-serum/anchor";
@@ -17,11 +13,13 @@ export const LootBox = ({
   addGear,
   bgColor,
   price,
+  bldBalance,
 }: {
   readonly gear: Gear;
   addGear: (gear: Gear) => void;
   bgColor?: string;
   price: number;
+  bldBalance: number;
 }) => {
   const walletAdapter = useWallet();
   const { connection } = useConnection();
@@ -126,7 +124,7 @@ export const LootBox = ({
     <Button
       height="120px"
       width="120px"
-      bgColor={bgColor || "containerBg"}
+      bgColor="#3cb371"
       borderRadius="10px"
       onClick={handleLootBoxClick}
       isLoading={isSendingTransaction}
@@ -135,5 +133,18 @@ export const LootBox = ({
     </Button>
   );
 
-  return <>{isClaimed ? claimed : unclaimed}</>;
+  const unavailable = (
+    <Center
+      height="120px"
+      width="120px"
+      bgColor={bgColor || "containerBg"}
+      borderRadius="10px"
+    >
+      <Text textAlign="center">Insufficient $BLD. Keep staking!</Text>
+    </Center>
+  );
+
+  return (
+    <>{isClaimed ? claimed : bldBalance >= price ? unclaimed : unavailable}</>
+  );
 };
