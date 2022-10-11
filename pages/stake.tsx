@@ -8,10 +8,10 @@ import {
   Flex,
   Center,
 } from "@chakra-ui/react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import MainLayout from "../components/MainLayout";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { PublicKey, Transaction } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import {
   Metaplex,
   Nft,
@@ -20,13 +20,9 @@ import {
   SftWithToken,
   walletAdapterIdentity,
 } from "@metaplex-foundation/js";
-import { ItemBox } from "../components/ItemBox";
 import StakeOptionsDisplay from "../components/StakeOptionsDisplay";
 import { BLD_TOKEN_MINT, GEAR_TOKEN_MINTS } from "../utils/constants";
-import {
-  getAssociatedTokenAddress,
-  createAssociatedTokenAccountInstruction,
-} from "@solana/spl-token";
+import { getAssociatedTokenAddress } from "@solana/spl-token";
 import { GearItem } from "../components/GearItem";
 import { LootBox } from "../components/LootBox";
 
@@ -75,9 +71,7 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
           .catch((error) => {});
       }
     );
-  }, [mint, metaplex, walletAdapter, connection]);
 
-  useEffect(() => {
     console.log("finding collected gear ...");
     const findCollectedGear = async () => {
       if (!walletAdapter.publicKey) return;
@@ -99,7 +93,7 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
       setGear(newGear);
     };
     findCollectedGear();
-  }, [connection, walletAdapter]);
+  }, [mint, metaplex, walletAdapter, connection]);
 
   return (
     <MainLayout>
