@@ -146,7 +146,7 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
               isStaked={isStaked}
               totalEarned={bldBalance}
             />
-            <HStack spacing={10}>
+            <HStack spacing={10} align="start">
               {Object.keys(gear).length > 0 && (
                 <VStack alignItems="flex-start">
                   <Text color="white" as="b" fontSize="2xl">
@@ -158,6 +158,7 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
                         key={mint}
                         bgColor="#d3d3d3"
                         mint={new PublicKey(mint)}
+                        count={gear[mint]}
                       />
                     ))}
                   </HStack>
