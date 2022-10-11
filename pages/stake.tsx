@@ -20,8 +20,15 @@ import {
   SftWithToken,
   walletAdapterIdentity,
 } from "@metaplex-foundation/js";
-import { ItemBox } from "../components/ItemBox";
 import StakeOptionsDisplay from "../components/StakeOptionsDisplay";
+import { BLD_TOKEN_MINT, GEAR_TOKEN_MINTS } from "../utils/constants";
+import { getAssociatedTokenAddress } from "@solana/spl-token";
+import { GearItem } from "../components/GearItem";
+import { LootBox } from "../components/LootBox";
+
+export interface Gear {
+  [index: string]: number;
+}
 
 const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
   const walletAdapter = useWallet();
@@ -34,11 +41,14 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
   }, [connection, walletAdapter]);
   const [isStaked, setIsStaked] = useState<boolean>(false);
   const [level, setLevel] = useState<number>(1);
+  const [gear, setGear] = useState<Gear>({});
+  const [bldBalance, setBldBalance] = useState<number>(0);
 
   const stake = () => setIsStaked(true);
   const unstake = () => setIsStaked(false);
 
   useEffect(() => {
+    console.log("get NFT data ...");
     metaplex
       .nfts()
       .findByMint({ mintAddress: mint })
@@ -47,8 +57,48 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
         setNftData(nft);
       })
       .catch((error) => console.error(error));
-  }, [mint, metaplex, walletAdapter]);
 
+    getBldBalance();
+
+    console.log("finding collected gear ...");
+    const findCollectedGear = async () => {
+      if (!walletAdapter.publicKey) return;
+      const newGear = { ...gear };
+      for (const mint of GEAR_TOKEN_MINTS) {
+        const userGearAta = await getAssociatedTokenAddress(
+          mint,
+          walletAdapter.publicKey
+        );
+
+        try {
+          const gearAtaBalance = (
+            await connection.getTokenAccountBalance(userGearAta)
+          ).value.amount;
+          newGear[mint.toBase58()] = Number(gearAtaBalance);
+        } catch (error) {}
+      }
+      console.log(newGear);
+      setGear(newGear);
+    };
+    findCollectedGear();
+  }, [mint, metaplex, walletAdapter, connection]);
+
+  const getBldBalance = () => {
+    console.log("getting $BLD balance ...");
+    if (!walletAdapter.publicKey) return;
+    getAssociatedTokenAddress(BLD_TOKEN_MINT, walletAdapter.publicKey).then(
+      (userBldAta) => {
+        connection
+          .getTokenAccountBalance(userBldAta)
+          .then((response) =>
+            // divide by 100 b/c $BLD has two decimals
+            // TODO refactor so 100 isn't hardcoded; use decimal value from response?
+            setBldBalance(Number(response.value.amount) / 100)
+          )
+          .catch((error) => {});
+      }
+    );
+  };
   return (
     <MainLayout>
       <VStack spacing={7} justify="flex-start" align="flex-start">
@@ -92,28 +142,60 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
               unstake={unstake}
               nftData={nftData}
               isStaked={isStaked}
-              daysStaked={4}
-              totalEarned={60}
-              claimable={20}
+              totalEarned={bldBalance}
+              bldBalanceCallback={getBldBalance}
             />
-            <HStack spacing={10}>
-              <VStack alignItems="flex-start">
-                <Text color="white" as="b" fontSize="2xl">
-                  Gear
-                </Text>
-                <HStack>
-                  <ItemBox bgColor="#d3d3d3">buildspace t-shirt</ItemBox>
-                  <ItemBox bgColor="#d3d3d3">buildspace sunglasses</ItemBox>
-                </HStack>
-              </VStack>
+            <HStack spacing={10} align="start">
+              {Object.keys(gear).length > 0 && (
+                <VStack alignItems="flex-start">
+                  <Text color="white" as="b" fontSize="2xl">
+                    Gear
+                  </Text>
+                  <HStack>
+                    {Object.keys(gear).map((mint) => (
+                      <GearItem
+                        key={mint}
+                        bgColor="#d3d3d3"
+                        mint={new PublicKey(mint)}
+                        count={gear[mint]}
+                      />
+                    ))}
+                  </HStack>
+                </VStack>
+              )}
               <VStack alignItems="flex-start">
                 <Text color="white" as="b" fontSize="2xl">
                   Loot Boxes
                 </Text>
                 <HStack>
-                  <ItemBox bgColor="#d3d3d3">secrets</ItemBox>
-                  <ItemBox bgColor="#d3d3d3">more secrets</ItemBox>
-                  <ItemBox bgColor="#d3d3d3">even more secrets</ItemBox>
+                  <LootBox
+                    bgColor="#d3d3d3"
+                    gear={gear}
+                    addGear={setGear}
+                    price={10}
+                    bldBalance={bldBalance}
+                  />
+                  <LootBox
+                    bgColor="#d3d3d3"
+                    gear={gear}
+                    addGear={setGear}
+                    price={20}
+                    bldBalance={bldBalance}
+                  />
+                  <LootBox
+                    bgColor="#d3d3d3"
+                    gear={gear}
+                    addGear={setGear}
+                    price={50}
+                    bldBalance={bldBalance}
+                  />
+                  <LootBox
+                    bgColor="#d3d3d3"
+                    gear={gear}
+                    addGear={setGear}
+                    price={100}
+                    bldBalance={bldBalance}
+                  />
                 </HStack>
               </VStack>
             </HStack>

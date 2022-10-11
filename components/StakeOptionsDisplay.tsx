@@ -12,9 +12,8 @@ interface StakeOptionsDisplayProps {
   unstake: () => void;
   nftData: any;
   isStaked: boolean;
-  daysStaked: number;
   totalEarned: number;
-  claimable: number;
+  bldBalanceCallback: () => void;
 }
 
 const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
@@ -22,9 +21,8 @@ const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
   unstake,
   nftData,
   isStaked,
-  daysStaked,
   totalEarned,
-  claimable,
+  bldBalanceCallback,
 }) => {
   const walletAdapter = useWallet();
   const { connection } = useConnection();
@@ -39,6 +37,7 @@ const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
         .getTokenLargestAccounts(nftData.mint.address)
         .then((accounts) => setNftTokenAccount(accounts.value[0].address));
     }
+    //TODO need walletAdapter?
   }, [nftData, walletAdapter, connection]);
 
   const handleStake: MouseEventHandler<HTMLButtonElement> = useCallback(
@@ -47,14 +46,14 @@ const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
       if (!walletAdapter.publicKey) {
         alert("Please connect your wallet");
         return;
-      } else if (!nftTokenAccount || !workspace.program) return;
+      } else if (!nftTokenAccount || !workspace.stakingProgram) return;
       setIsSendingTransaction(true);
       console.log("mmmh, stake");
 
       const transaction = new Transaction();
 
       try {
-        const instruction = await workspace.program.methods
+        const instruction = await workspace.stakingProgram.methods
           .stake()
           .accounts({
             nftPublickey: nftTokenAccount,
@@ -75,7 +74,7 @@ const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
     [
       walletAdapter.publicKey,
       nftTokenAccount,
-      workspace.program,
+      workspace.stakingProgram,
       nftData,
       stake,
     ]
@@ -86,7 +85,7 @@ const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
       if (!walletAdapter.publicKey) {
         alert("Please connect your wallet");
         return;
-      } else if (!nftTokenAccount || !workspace.program) {
+      } else if (!nftTokenAccount || !workspace.stakingProgram) {
         return;
       }
       setIsSendingTransaction(true);
@@ -101,7 +100,7 @@ const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
       );
 
       try {
-        const instruction = await workspace.program.methods
+        const instruction = await workspace.stakingProgram.methods
           .unstake()
           .accounts({
             nftPublickey: nftTokenAccount,
@@ -115,6 +114,7 @@ const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
         transaction.add(instruction);
         await sendAndConfirmTransaction(transaction);
         unstake();
+        bldBalanceCallback();
       } catch (error) {
         console.log(error);
       } finally {
@@ -124,7 +124,7 @@ const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
     [
       walletAdapter.publicKey,
       nftTokenAccount,
-      workspace.program,
+      workspace.stakingProgram,
       nftData,
       unstake,
     ]
@@ -136,7 +136,7 @@ const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
       if (!walletAdapter.publicKey) {
         alert("Please connect your wallet");
         return;
-      } else if (!nftTokenAccount || !workspace.program) {
+      } else if (!nftTokenAccount || !workspace.stakingProgram) {
         return;
       }
       setIsSendingTransaction(true);
@@ -151,7 +151,7 @@ const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
       );
 
       try {
-        const instruction = await workspace.program.methods
+        const instruction = await workspace.stakingProgram.methods
           .redeem()
           .accounts({
             nftPublickey: nftTokenAccount,
@@ -161,13 +161,14 @@ const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
           .instruction();
         transaction.add(instruction);
         await sendAndConfirmTransaction(transaction);
+        bldBalanceCallback();
       } catch (error) {
         console.log(error);
       } finally {
         setIsSendingTransaction(false);
       }
     },
-    [walletAdapter.publicKey, nftTokenAccount, workspace.program]
+    [walletAdapter.publicKey, nftTokenAccount, workspace.stakingProgram]
   );
 
   const sendAndConfirmTransaction = useCallback(
@@ -208,16 +209,14 @@ const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
         as="b"
         fontSize="sm"
       >
-        {isStaked
-          ? `STAKING ${daysStaked} DAY${daysStaked === 1 ? "" : "S"}`
-          : "READY TO STAKE"}
+        {isStaked ? `STAKING` : "READY TO STAKE"}
       </Text>
       <VStack spacing={-1}>
         <Text color="white" as="b" fontSize="4xl">
-          {isStaked ? `${totalEarned} $BLD` : "0 $BLD"}
+          {`${totalEarned} $BLD`}
         </Text>
         <Text color="bodyText">
-          {isStaked ? `${claimable} $BLD earned` : "earn $BLD by staking"}
+          {isStaked ? "earning $BLD ..." : "earn $BLD by staking"}
         </Text>
       </VStack>
       <Button
