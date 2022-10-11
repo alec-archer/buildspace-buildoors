@@ -12,9 +12,7 @@ interface StakeOptionsDisplayProps {
   unstake: () => void;
   nftData: any;
   isStaked: boolean;
-  daysStaked: number;
   totalEarned: number;
-  claimable: number;
 }
 
 const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
@@ -22,9 +20,7 @@ const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
   unstake,
   nftData,
   isStaked,
-  daysStaked,
   totalEarned,
-  claimable,
 }) => {
   const walletAdapter = useWallet();
   const { connection } = useConnection();
@@ -209,16 +205,14 @@ const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
         as="b"
         fontSize="sm"
       >
-        {isStaked
-          ? `STAKING ${daysStaked} DAY${daysStaked === 1 ? "" : "S"}`
-          : "READY TO STAKE"}
+        {isStaked ? `STAKING` : "READY TO STAKE"}
       </Text>
       <VStack spacing={-1}>
         <Text color="white" as="b" fontSize="4xl">
           {`${totalEarned} $BLD`}
         </Text>
         <Text color="bodyText">
-          {isStaked ? `${claimable} $BLD earned` : "earn $BLD by staking"}
+          {isStaked ? "earning $BLD ..." : "earn $BLD by staking"}
         </Text>
       </VStack>
       <Button

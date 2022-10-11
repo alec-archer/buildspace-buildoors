@@ -181,9 +181,7 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
               unstake={unstake}
               nftData={nftData}
               isStaked={isStaked}
-              daysStaked={4}
               totalEarned={bldBalance}
-              claimable={20}
             />
             <HStack spacing={10}>
               <VStack alignItems="flex-start">
