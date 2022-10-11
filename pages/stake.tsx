@@ -22,7 +22,7 @@ import {
 } from "@metaplex-foundation/js";
 import { ItemBox } from "../components/ItemBox";
 import StakeOptionsDisplay from "../components/StakeOptionsDisplay";
-import { GEAR_TOKEN_MINTS } from "../utils/constants";
+import { BLD_TOKEN_MINT, GEAR_TOKEN_MINTS } from "../utils/constants";
 import {
   getAssociatedTokenAddress,
   createAssociatedTokenAccountInstruction,
@@ -42,11 +42,14 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
   const [isStaked, setIsStaked] = useState<boolean>(false);
   const [level, setLevel] = useState<number>(1);
   const [gear, setGear] = useState<PublicKey[]>([]);
+  const [bldBalance, setBldBalance] = useState<number>(0);
 
   const stake = () => setIsStaked(true);
   const unstake = () => setIsStaked(false);
 
   useEffect(() => {
+    if (!walletAdapter.publicKey) return;
+
     metaplex
       .nfts()
       .findByMint({ mintAddress: mint })
@@ -55,7 +58,20 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
         setNftData(nft);
       })
       .catch((error) => console.error(error));
-  }, [mint, metaplex, walletAdapter]);
+
+    getAssociatedTokenAddress(BLD_TOKEN_MINT, walletAdapter.publicKey).then(
+      (userBldAta) => {
+        connection
+          .getTokenAccountBalance(userBldAta)
+          .then((response) =>
+            // divide by 100 b/c $BLD has two decimals
+            // TODO refactor so 100 isn't hardcoded
+            setBldBalance(Number(response.value.amount) / 100)
+          )
+          .catch((error) => {});
+      }
+    );
+  }, [mint, metaplex, walletAdapter, connection]);
 
   // this code would be if gear persisted across reloads
   // useEffect(() => {
@@ -166,7 +182,7 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
               nftData={nftData}
               isStaked={isStaked}
               daysStaked={4}
-              totalEarned={60}
+              totalEarned={bldBalance}
               claimable={20}
             />
             <HStack spacing={10}>

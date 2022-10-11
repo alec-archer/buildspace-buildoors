@@ -215,7 +215,7 @@ const StakeOptionsDisplay: FC<StakeOptionsDisplayProps> = ({
       </Text>
       <VStack spacing={-1}>
         <Text color="white" as="b" fontSize="4xl">
-          {isStaked ? `${totalEarned} $BLD` : "0 $BLD"}
+          {`${totalEarned} $BLD`}
         </Text>
         <Text color="bodyText">
           {isStaked ? `${claimable} $BLD earned` : "earn $BLD by staking"}
