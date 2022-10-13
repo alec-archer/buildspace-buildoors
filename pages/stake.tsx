@@ -8,7 +8,7 @@ import {
   Flex,
   Center,
 } from "@chakra-ui/react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import MainLayout from "../components/MainLayout";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
@@ -51,10 +51,8 @@ const Stake: NextPage<StakeProps> = ({ mintAddress, imageSrc }) => {
       Metaplex.make(connection).use(walletAdapterIdentity(walletAdapter))
     );
 
-    getBldBalance();
-
-    console.log("finding collected gear ...");
     const findCollectedGear = async () => {
+      console.log("finding collected gear ...");
       if (!walletAdapter.publicKey) return;
       const newGear = { ...gear };
       for (const mint of GEAR_TOKEN_MINTS) {
@@ -77,8 +75,12 @@ const Stake: NextPage<StakeProps> = ({ mintAddress, imageSrc }) => {
   }, [connection, walletAdapter]);
 
   useEffect(() => {
-    if (!metaplex) return;
+    getBldBalance();
+  }, [gear, connection, walletAdapter]);
+
+  useEffect(() => {
     console.log("get NFT data ...");
+    if (!metaplex) return;
     const mint = new PublicKey(mintAddress);
     metaplex
       .nfts()
@@ -106,6 +108,18 @@ const Stake: NextPage<StakeProps> = ({ mintAddress, imageSrc }) => {
       }
     );
   };
+
+  const addGear = useCallback(
+    (newGearMint: PublicKey) => {
+      const newGear = { ...gear };
+      newGear[newGearMint.toBase58()]
+        ? (newGear[newGearMint.toBase58()] += 1)
+        : (newGear[newGearMint.toBase58()] = 1);
+      setGear(newGear);
+    },
+    [gear]
+  );
+
   return (
     <MainLayout>
       <VStack spacing={7} justify="flex-start" align="flex-start">
@@ -179,11 +193,9 @@ const Stake: NextPage<StakeProps> = ({ mintAddress, imageSrc }) => {
                     <LootBox
                       key={price}
                       bgColor="#d3d3d3"
-                      gear={gear}
-                      addGear={setGear}
+                      addGear={addGear}
                       price={price}
                       bldBalance={bldBalance}
-                      bldBalanceCallback={getBldBalance}
                     />
                   ))}
                 </HStack>

@@ -6,22 +6,17 @@ import { getAssociatedTokenAddress } from "@solana/spl-token";
 import { BLD_TOKEN_MINT, LOOT_BOX_PROGRAM_ID } from "../utils/constants";
 import { useWorkspace } from "./WorkspaceProvider";
 import { BN } from "@project-serum/anchor";
-import { Gear } from "../pages/stake";
 
 export const LootBox = ({
-  gear,
   addGear,
   bgColor,
   price,
   bldBalance,
-  bldBalanceCallback,
 }: {
-  readonly gear: Gear;
-  addGear: (gear: Gear) => void;
+  addGear: (newGearMint: PublicKey) => void;
   bgColor?: string;
   price: number;
   bldBalance: number;
-  bldBalanceCallback: () => void;
 }) => {
   const walletAdapter = useWallet();
   const { connection } = useConnection();
@@ -84,12 +79,7 @@ export const LootBox = ({
 
     await sendAndConfirmTransaction(getLootTransaction);
     // setGear(gearMint)
-    const newGear = { ...gear };
-    newGear[lootBox.gearMint.toBase58()]
-      ? (newGear[lootBox.gearMint.toBase58()] += 1)
-      : (newGear[lootBox.gearMint.toBase58()] = 1);
-    addGear(newGear);
-    bldBalanceCallback();
+    addGear(lootBox.gearMint);
     setIsClaimed(true);
     setIsSendingTransaction(false);
     console.log("Successfully collected gear");
@@ -150,6 +140,8 @@ export const LootBox = ({
   );
 
   return (
-    <>{isClaimed ? claimed : bldBalance >= price ? unclaimed : unavailable}</>
+    <div>
+      {isClaimed ? claimed : bldBalance >= price ? unclaimed : unavailable}
+    </div>
   );
 };
