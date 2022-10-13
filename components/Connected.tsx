@@ -14,34 +14,30 @@ import {
 } from "@metaplex-foundation/js";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useRouter } from "next/router";
-import {
-  FC,
-  MouseEventHandler,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { FC, MouseEventHandler, useCallback, useEffect, useState } from "react";
 import { CANDY_MACHINE_ID } from "../utils/constants";
 
 const Connected: FC = () => {
   const { connection } = useConnection();
   const walletAdapter = useWallet();
   const [candyMachine, setCandyMachine] = useState<CandyMachine>();
+  const [metaplex, setMetaplex] = useState<Metaplex>();
 
-  const metaplex = useMemo(() => {
-    return Metaplex.make(connection).use(walletAdapterIdentity(walletAdapter));
+  useEffect(() => {
+    console.log("metaplex");
+    setMetaplex(
+      Metaplex.make(connection).use(walletAdapterIdentity(walletAdapter))
+    );
   }, [connection, walletAdapter]);
 
   useEffect(() => {
+    console.log("candymachine");
     if (!metaplex) return;
-
     metaplex
       .candyMachines()
       .findByAddress({ address: CANDY_MACHINE_ID })
       .run()
       .then((candyMachine) => {
-        console.log(candyMachine);
         setCandyMachine(candyMachine);
       })
       .catch((error) => {
@@ -51,10 +47,11 @@ const Connected: FC = () => {
 
   const router = useRouter();
 
+  // TODO useCallback necessary?
   const handleClick: MouseEventHandler<HTMLButtonElement> = useCallback(
     (event) => {
-      if (event.defaultPrevented) return;
-      if (!candyMachine || !walletAdapter.connected) return;
+      event.preventDefault();
+      if (!candyMachine || !walletAdapter.connected || !metaplex) return;
 
       console.log("Mint!");
       metaplex

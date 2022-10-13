@@ -9,28 +9,29 @@ import {
   Button,
 } from "@chakra-ui/react";
 import { ArrowForwardIcon } from "@chakra-ui/icons";
-import {
-  MouseEventHandler,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { MouseEventHandler, useCallback, useEffect, useState } from "react";
 import MainLayout from "../components/MainLayout";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
 import { Metaplex, walletAdapterIdentity } from "@metaplex-foundation/js";
 import { useRouter } from "next/router";
 
-const NewMint: NextPage<NewMintProps> = ({ mint }) => {
+const NewMint: NextPage<NewMintProps> = ({ mintAddress }) => {
   const walletAdapter = useWallet();
   const { connection } = useConnection();
   const [metadata, setMetadata] = useState<any>();
-  const metaplex = useMemo(() => {
-    return Metaplex.make(connection).use(walletAdapterIdentity(walletAdapter));
+  const [metaplex, setMetaplex] = useState<Metaplex>();
+  const router = useRouter();
+
+  useEffect(() => {
+    setMetaplex(
+      Metaplex.make(connection).use(walletAdapterIdentity(walletAdapter))
+    );
   }, [connection, walletAdapter]);
 
   useEffect(() => {
+    if (!metaplex) return;
+    const mint = new PublicKey(mintAddress);
     metaplex
       .nfts()
       .findByMint({ mintAddress: mint })
@@ -39,23 +40,21 @@ const NewMint: NextPage<NewMintProps> = ({ mint }) => {
         fetch(nft.uri)
           .then((res) => res.json())
           .then((metadata) => {
+            console.log(`after metadata=${metadata}, mint=${mint}`);
             setMetadata(metadata);
           });
       })
       .catch((error) => console.error(error));
-  }, [mint, metaplex, walletAdapter]);
+  }, [mintAddress, metaplex]);
 
-  const router = useRouter();
+  // TODO useCallback necessary?
+  const handleClick: MouseEventHandler<HTMLButtonElement> = (event) => {
+    event.preventDefault();
+    console.log("stake button");
+    if (!metaplex || !walletAdapter.connected) return;
 
-  const handleClick: MouseEventHandler<HTMLButtonElement> = useCallback(
-    (event) => {
-      if (event.defaultPrevented) return;
-      if (!metaplex || !walletAdapter.connected) return;
-
-      router.push(`/stake?mint=${mint.toBase58()}&imageSrc=${metadata?.image}`);
-    },
-    [mint, metadata, walletAdapter, router, metaplex]
-  );
+    router.push(`/stake?mint=${mintAddress}&imageSrc=${metadata?.image}`);
+  };
 
   return (
     <MainLayout>
@@ -92,20 +91,18 @@ const NewMint: NextPage<NewMintProps> = ({ mint }) => {
 };
 
 interface NewMintProps {
-  mint: PublicKey;
+  mintAddress: string;
 }
-
+// TODO is there a way to use new PublicKey and have page still work on reload?
+// getServerSideProps requires props to be JSON serializable -- which would mean passing in a string type to the page
+// getStaticProps requires info to be known at build time -- which the mint address will not be known at build time
+// getInitialProps runs on the server side initially -- like getServerSideProps; so the props must be JSON serializable. The function will then run on the client side.
 NewMint.getInitialProps = async ({ query }) => {
   const { mint } = query;
 
   if (!mint) throw { error: "no mint" };
 
-  try {
-    const mintPubkey = new PublicKey(mint);
-    return { mint: mintPubkey };
-  } catch {
-    throw { error: "invalid mint" };
-  }
+  return { mintAddress: mint as string };
 };
 
 export default NewMint;

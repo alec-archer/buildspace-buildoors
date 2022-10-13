@@ -8,7 +8,7 @@ import {
   Flex,
   Center,
 } from "@chakra-ui/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import MainLayout from "../components/MainLayout";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
@@ -30,15 +30,13 @@ export interface Gear {
   [index: string]: number;
 }
 
-const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
+const Stake: NextPage<StakeProps> = ({ mintAddress, imageSrc }) => {
   const walletAdapter = useWallet();
   const { connection } = useConnection();
   const [nftData, setNftData] = useState<
     Nft | NftWithToken | Sft | SftWithToken
   >();
-  const metaplex = useMemo(() => {
-    return Metaplex.make(connection).use(walletAdapterIdentity(walletAdapter));
-  }, [connection, walletAdapter]);
+  const [metaplex, setMetaplex] = useState<Metaplex>();
   const [isStaked, setIsStaked] = useState<boolean>(false);
   const [level, setLevel] = useState<number>(1);
   const [gear, setGear] = useState<Gear>({});
@@ -49,15 +47,9 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
   const lootBoxes = [10, 20, 50, 100];
 
   useEffect(() => {
-    console.log("get NFT data ...");
-    metaplex
-      .nfts()
-      .findByMint({ mintAddress: mint })
-      .run()
-      .then((nft) => {
-        setNftData(nft);
-      })
-      .catch((error) => console.error(error));
+    setMetaplex(
+      Metaplex.make(connection).use(walletAdapterIdentity(walletAdapter))
+    );
 
     getBldBalance();
 
@@ -82,7 +74,21 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
       setGear(newGear);
     };
     findCollectedGear();
-  }, [mint, metaplex, walletAdapter, connection]);
+  }, [connection, walletAdapter]);
+
+  useEffect(() => {
+    if (!metaplex) return;
+    console.log("get NFT data ...");
+    const mint = new PublicKey(mintAddress);
+    metaplex
+      .nfts()
+      .findByMint({ mintAddress: mint })
+      .run()
+      .then((nft) => {
+        setNftData(nft);
+      })
+      .catch((error) => console.error(error));
+  }, [mintAddress, metaplex]);
 
   const getBldBalance = () => {
     console.log("getting $BLD balance ...");
@@ -191,7 +197,7 @@ const Stake: NextPage<StakeProps> = ({ mint, imageSrc }) => {
 };
 
 interface StakeProps {
-  mint: PublicKey;
+  mintAddress: string;
   imageSrc: any;
 }
 
@@ -200,12 +206,7 @@ Stake.getInitialProps = async ({ query }) => {
 
   if (!mint) throw { error: "no mint" };
 
-  try {
-    const mintPubkey = new PublicKey(mint);
-    return { mint: mintPubkey, imageSrc };
-  } catch {
-    throw { error: "invalid mint" };
-  }
+  return { mintAddress: mint as string, imageSrc };
 };
 
 export default Stake;

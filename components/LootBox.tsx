@@ -1,7 +1,7 @@
 import { Button, Center, Text } from "@chakra-ui/react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey, Transaction } from "@solana/web3.js";
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { getAssociatedTokenAddress } from "@solana/spl-token";
 import { BLD_TOKEN_MINT, LOOT_BOX_PROGRAM_ID } from "../utils/constants";
 import { useWorkspace } from "./WorkspaceProvider";
@@ -95,28 +95,25 @@ export const LootBox = ({
     console.log("Successfully collected gear");
   };
 
-  const sendAndConfirmTransaction = useCallback(
-    async (transaction: Transaction) => {
-      console.log("Sending transaction ...");
-      const signature = await walletAdapter.sendTransaction(
-        transaction,
-        connection
-      );
-      const latestBlockhash = await connection.getLatestBlockhash();
-      await connection.confirmTransaction(
-        {
-          blockhash: latestBlockhash.blockhash,
-          lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
-          signature: signature,
-        },
-        "finalized"
-      );
-      console.log(
-        `Transaction submitted successfully: https://explorer.solana.com/tx/${signature}?cluster=devnet`
-      );
-    },
-    [walletAdapter, connection]
-  );
+  const sendAndConfirmTransaction = async (transaction: Transaction) => {
+    console.log("Sending transaction ...");
+    const signature = await walletAdapter.sendTransaction(
+      transaction,
+      connection
+    );
+    const latestBlockhash = await connection.getLatestBlockhash();
+    await connection.confirmTransaction(
+      {
+        blockhash: latestBlockhash.blockhash,
+        lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+        signature: signature,
+      },
+      "finalized"
+    );
+    console.log(
+      `Transaction submitted successfully: https://explorer.solana.com/tx/${signature}?cluster=devnet`
+    );
+  };
 
   const claimed = (
     <Center
