@@ -1,27 +1,22 @@
 import { Button, Center, Text } from "@chakra-ui/react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey, Transaction } from "@solana/web3.js";
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { getAssociatedTokenAddress } from "@solana/spl-token";
 import { BLD_TOKEN_MINT, LOOT_BOX_PROGRAM_ID } from "../utils/constants";
 import { useWorkspace } from "./WorkspaceProvider";
 import { BN } from "@project-serum/anchor";
-import { Gear } from "../pages/stake";
 
 export const LootBox = ({
-  gear,
   addGear,
   bgColor,
   price,
   bldBalance,
-  bldBalanceCallback,
 }: {
-  readonly gear: Gear;
-  addGear: (gear: Gear) => void;
+  addGear: (newGearMint: PublicKey) => void;
   bgColor?: string;
   price: number;
   bldBalance: number;
-  bldBalanceCallback: () => void;
 }) => {
   const walletAdapter = useWallet();
   const { connection } = useConnection();
@@ -84,39 +79,31 @@ export const LootBox = ({
 
     await sendAndConfirmTransaction(getLootTransaction);
     // setGear(gearMint)
-    const newGear = { ...gear };
-    newGear[lootBox.gearMint.toBase58()]
-      ? (newGear[lootBox.gearMint.toBase58()] += 1)
-      : (newGear[lootBox.gearMint.toBase58()] = 1);
-    addGear(newGear);
-    bldBalanceCallback();
+    addGear(lootBox.gearMint);
     setIsClaimed(true);
     setIsSendingTransaction(false);
     console.log("Successfully collected gear");
   };
 
-  const sendAndConfirmTransaction = useCallback(
-    async (transaction: Transaction) => {
-      console.log("Sending transaction ...");
-      const signature = await walletAdapter.sendTransaction(
-        transaction,
-        connection
-      );
-      const latestBlockhash = await connection.getLatestBlockhash();
-      await connection.confirmTransaction(
-        {
-          blockhash: latestBlockhash.blockhash,
-          lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
-          signature: signature,
-        },
-        "finalized"
-      );
-      console.log(
-        `Transaction submitted successfully: https://explorer.solana.com/tx/${signature}?cluster=devnet`
-      );
-    },
-    [walletAdapter, connection]
-  );
+  const sendAndConfirmTransaction = async (transaction: Transaction) => {
+    console.log("Sending transaction ...");
+    const signature = await walletAdapter.sendTransaction(
+      transaction,
+      connection
+    );
+    const latestBlockhash = await connection.getLatestBlockhash();
+    await connection.confirmTransaction(
+      {
+        blockhash: latestBlockhash.blockhash,
+        lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+        signature: signature,
+      },
+      "finalized"
+    );
+    console.log(
+      `Transaction submitted successfully: https://explorer.solana.com/tx/${signature}?cluster=devnet`
+    );
+  };
 
   const claimed = (
     <Center
@@ -153,6 +140,8 @@ export const LootBox = ({
   );
 
   return (
-    <>{isClaimed ? claimed : bldBalance >= price ? unclaimed : unavailable}</>
+    <div>
+      {isClaimed ? claimed : bldBalance >= price ? unclaimed : unavailable}
+    </div>
   );
 };
